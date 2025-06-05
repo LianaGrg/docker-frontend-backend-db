@@ -31,7 +31,7 @@ jobs:
           docker build -t $BACKEND_IMAGE:$IMAGE_TAG ./backend
 
       - name: Install Trivy
-        uses: aquasecurity/trivy-action@v0.15.0
+        uses: aquasecurity/trivy-action@master
         with:
           version: '0.51.1'
 
