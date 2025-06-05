@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FRONTEND_IMAGE: myorg/frontend
-      BACKEND_IMAGE: myorg/backend
+      FRONTEND_IMAGE: frontend
+      BACKEND_IMAGE: backend
       IMAGE_TAG: ${{ github.sha }}
 
     steps:
