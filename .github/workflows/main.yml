@@ -1,0 +1,44 @@
+name: Build and Scan Docker Images
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+
+    env:
+      FRONTEND_IMAGE: myorg/frontend
+      BACKEND_IMAGE: myorg/backend
+      IMAGE_TAG: ${{ github.sha }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend image
+        run: |
+          docker build -t $FRONTEND_IMAGE:$IMAGE_TAG ./frontend
+
+      - name: Build backend image
+        run: |
+          docker build -t $BACKEND_IMAGE:$IMAGE_TAG ./backend
+
+      - name: Install Trivy
+        uses: aquasecurity/trivy-action@v0.15.0
+        with:
+          version: '0.51.1'
+
+      - name: Scan frontend image with Trivy (ignore result)
+        run: |
+          trivy image --severity CRITICAL,HIGH $FRONTEND_IMAGE:$IMAGE_TAG || true
+
+      - name: Scan backend image with Trivy (ignore result)
+        run: |
+          trivy image --severity CRITICAL,HIGH $BACKEND_IMAGE:$IMAGE_TAG || true
