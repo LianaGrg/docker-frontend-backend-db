@@ -30,15 +30,16 @@ jobs:
         run: |
           docker build -t $BACKEND_IMAGE:$IMAGE_TAG ./backend
 
-      - name: Install Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          version: 'latest'
-
       - name: Scan frontend image with Trivy (ignore result)
         run: |
-          trivy image --severity CRITICAL,HIGH $FRONTEND_IMAGE:$IMAGE_TAG || true
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image \
+            --severity CRITICAL,HIGH \
+            $FRONTEND_IMAGE:$IMAGE_TAG || true
 
       - name: Scan backend image with Trivy (ignore result)
         run: |
-          trivy image --severity CRITICAL,HIGH $BACKEND_IMAGE:$IMAGE_TAG || true
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image \
+            --severity CRITICAL,HIGH \
+            $BACKEND_IMAGE:$IMAGE_TAG || true
