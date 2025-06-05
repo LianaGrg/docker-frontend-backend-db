@@ -33,7 +33,7 @@ jobs:
       - name: Install Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          version: '0.51.1'
+          version: 'latest'
 
       - name: Scan frontend image with Trivy (ignore result)
         run: |
