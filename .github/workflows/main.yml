@@ -1,4 +1,4 @@
-name: Build and Scan Docker Images
+name: CI/CD Pipeline
 
 on:
   push:
@@ -14,6 +14,7 @@ jobs:
       FRONTEND_IMAGE: frontend
       BACKEND_IMAGE: backend
       IMAGE_TAG: ${{ github.sha }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
     steps:
       - name: Checkout code
@@ -39,12 +40,12 @@ jobs:
           echo "FRONTEND_ECR=${{ steps.login-ecr.outputs.registry }}/bdg/web_app_front" >> $GITHUB_ENV
           echo "BACKEND_ECR=${{ steps.login-ecr.outputs.registry }}/bdg/web_app_back" >> $GITHUB_ENV
 
-      - name: Build frontend image
+      - name: Build and Tag frontend image
         run: |
           docker build -t $FRONTEND_IMAGE:$IMAGE_TAG ./frontend
           docker tag $FRONTEND_IMAGE:$IMAGE_TAG $FRONTEND_ECR:$IMAGE_TAG
 
-      - name: Build backend image
+      - name: Build and Tag backend image
         run: |
           docker build -t $BACKEND_IMAGE:$IMAGE_TAG ./backend
           docker tag $BACKEND_IMAGE:$IMAGE_TAG $BACKEND_ECR:$IMAGE_TAG
@@ -70,3 +71,56 @@ jobs:
       - name: Push backend image to ECR
         run: |
           docker push $BACKEND_ECR:$IMAGE_TAG
+
+  terraform:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Init and Apply Terraform Backend
+        working-directory: terraform/backend
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Init and Apply Terraform Infrastructure
+        working-directory: terraform/infrastructure
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+  ansible:
+    needs: terraform
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ansible_ec2_setup
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: sudo apt update && sudo apt install -y ansible
+
+      - name: Create SSH private key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PEM_FILE }}" > ~/.ssh/bdg_web_app.pem
+          chmod 400 ~/.ssh/bdg_web_app.pem
+
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i inventory.ini playbook.yml \
+            --extra-vars "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }} aws_region=${{ secrets.AWS_REGION }} image_tag=${{ github.sha }}"
