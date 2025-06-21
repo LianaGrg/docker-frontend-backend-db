@@ -132,13 +132,23 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.PEM_FILE }}" > ~/.ssh/bdg_web_app.pem
-          chmod 400 ~/.ssh/bdg_web_app.pem
+          chmod 600 ~/.ssh/bdg_web_app.pem
+
+      - name: Show EC2 IP (debug)
+        run: echo "${{ needs.terraform.outputs.ec2_ip }}"
 
       - name: Generate dynamic Ansible inventory
         run: |
           echo "[web]" > inventory.ini
           echo "ec2-instance ansible_host=${{ needs.terraform.outputs.ec2_ip }} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/bdg_web_app.pem" >> inventory.ini
 
+      - name: Show inventory file (debug)
+        run: cat inventory.ini
+
+      - name: Test SSH connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/bdg_web_app.pem ubuntu@${{ needs.terraform.outputs.ec2_ip }} echo "SSH OK"
+      
       - name: Run Ansible Playbook
         run: |
           ansible-playbook -i inventory.ini playbook.yml \
