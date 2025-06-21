@@ -35,17 +35,17 @@ resource "aws_security_group" "web_sg" {
   }
 
   ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
+    description = "App"
+    from_port   = 3000
+    to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
+    ingress {
     description = "App"
     from_port   = 3000
-    to_port     = 3000
+    to_port     = 3001
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

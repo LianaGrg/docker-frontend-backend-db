@@ -1,18 +1,28 @@
-A demonstration of Docker to implement a simple 3 tier architecture
+✅ Final CI/CD GitHub Actions Pipeline
 
-* frontend will be able to access the mid-tier
-* mid-tier will be able to access the db
+🎯 What it does:
+Builds frontend & backend Docker images
+Tags and pushes both with ${{ github.sha }}
+Runs Terraform:
+Initializes and applies terraform/backend
+Initializes and applies terraform/infrastructure
+Deploys the app to EC2 via Ansible using the SHA-based image tags
 
-In order to run this in docker, simply type ```docker-compose up``` at the command prompt. Docker will then create the [MongoDB](https://www.mongodb.com/) from the stock [mongo](https://hub.docker.com/_/mongo) image. The api uses [nodejs](https://nodejs.org/) with [express](http://expressjs.com/) and is built from a [node:alpine](https://hub.docker.com/_/node) image. The front end uses [ReactJS](https://reactjs.org/) and built from a [node:alpine](https://hub.docker.com/_/node) image.
+🗂️ Repository Structure (Expected)
 
--- In order to create EC2 instance with terraform:
-firstly configure aws account with 
-```
-    aws configure
-```
-then run 
-``` 
-    terraform init
-    terraform plan
-    terraform apply
-```
+.
+├── .github/
+│   └── workflows/
+│       └── deploy.yml           # ← GitHub Actions workflow
+├── terraform/
+│   ├── backend/
+│   │   └── main.tf              # Terraform backend config (S3)
+│   └── infrastructure/
+│       └── main.tf              # EC2 instance, security groups
+├── ansible_ec2_setup/
+│   ├── inventory.ini
+│   ├── playbook.yml             # Modified to use image_tag variable
+│   └── templates/
+│       └── docker-compose.yml.j2
+├── frontend/
+├── backend/
